@@ -311,22 +311,27 @@ Do not merge until review is complete. Prefer many small PRs over large ones.
 
 ## Development workflow
 
+Work is **issue-driven**. GitHub issues track *what* to build (goals and exit criteria). Plans and commit splits live in chat, not in issue bodies.
+
 For every feature, bug fix, documentation change, or refactor:
 
 1. Understand the problem and check [`PROJECT.md`](./PROJECT.md) scope.
 2. Clarify requirements if needed.
-3. Present an implementation plan.
-4. Identify affected files.
-5. Suggest commit boundaries.
-6. Wait for approval before major changes (when appropriate).
-7. Implement incrementally.
-8. Pause at logical milestones.
-9. Recommend creating a commit.
-10. Keep commits small and focused.
-11. Open a pull request.
-12. Update `PROJECT.md` / `CURSOR.md` / `README.md` if decisions or setup changed.
+3. **In chat**, present an implementation plan: approach, affected files, and suggested commit boundaries.
+4. **Wait for explicit approval** before writing application code for that issue.
+5. Implement incrementally on a dedicated branch.
+6. Pause at logical milestones; recommend creating commits.
+7. Keep commits small and focused (Conventional Commits).
+8. Open a pull request linked to the issue.
+9. Update `PROJECT.md` / `CURSOR.md` / `README.md` if decisions or setup changed.
 
-Prefer many small PRs over large ones.
+Prefer many small PRs over large ones. One issue → one PR unless the human asks otherwise.
+
+### Issue conventions
+
+- Issue titles describe the outcome (e.g. `Device identity and scam report intake`). Do **not** prefix titles with `Phase N:`.
+- Issue bodies include summary, goals, out of scope, and exit criteria. Do **not** put planned commit lists in issues.
+- Before starting the next issue, the assistant must show the plan and commit outline in chat and wait for approval.
 
 ---
 
@@ -337,7 +342,8 @@ When assisting in this repository:
 - Treat [`PROJECT.md`](./PROJECT.md) as the product/architecture source of truth and this file as the engineering workflow source of truth.
 - Stay inside MVP scope.
 - Avoid over-engineering; prefer incremental changes.
-- Suggest commit boundaries before large changes; pause after logical milestones.
+- **Before starting each issue:** show the implementation plan and commit outline in chat; wait for approval. Do not bury that plan only inside the GitHub issue.
+- Pause after logical milestones; recommend commits; then open a PR.
 - Keep documentation synchronized with implementation.
 - Never commit secrets.
 - Never modify unrelated code.
