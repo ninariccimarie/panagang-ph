@@ -1,1 +1,5 @@
-//! Database access via SQLx (Phase 2+).
+//! Database access via SQLx.
+
+mod device;
+
+pub use device::DeviceRepository;

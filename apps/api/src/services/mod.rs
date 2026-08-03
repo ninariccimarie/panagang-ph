@@ -1,1 +1,5 @@
-//! Business logic services (Phase 2+).
+//! Business logic services.
+
+mod device;
+
+pub use device::DeviceService;

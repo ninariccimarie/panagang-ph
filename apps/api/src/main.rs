@@ -1,4 +1,4 @@
-//! Panagang PH API — Phase 1 skeleton (`health` GraphQL).
+//! Panagang PH API — device identity and scam report intake.
 
 mod config;
 mod graphql;
@@ -6,16 +6,14 @@ mod graphql;
 mod jobs;
 #[allow(dead_code)]
 mod llm;
-#[allow(dead_code)]
 mod models;
-#[allow(dead_code)]
 mod repositories;
-#[allow(dead_code)]
 mod services;
 
 use std::net::SocketAddr;
 
 use axum::Router;
+use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -28,17 +26,29 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("panagang_api=info,tower_http=info")),
+                .unwrap_or_else(|_| EnvFilter::new("panagang_api=info,tower_http=info,sqlx=warn")),
         )
         .init();
 
     let config = Config::from_env();
+
+    let pool = PgPoolOptions::new()
+        .max_connections(10)
+        .connect(&config.database_url)
+        .await
+        .expect("failed to connect to Postgres");
+
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("failed to run database migrations");
+
+    let addr = SocketAddr::from((config.host, config.port));
     let app = Router::new()
-        .merge(graphql_router())
+        .merge(graphql_router(pool, config))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
 
-    let addr = SocketAddr::from((config.host, config.port));
     tracing::info!("listening on http://{addr}");
     tracing::info!("GraphQL endpoint: http://{addr}/graphql");
 

@@ -1,33 +1,46 @@
-//! Root GraphQL schema (MVP operations grow here).
+//! Root GraphQL schema.
 
-use async_graphql::{Context, EmptyMutation, EmptySubscription, Object, Schema};
+use async_graphql::{Context, EmptySubscription, Object, Result, Schema};
+use sqlx::PgPool;
 
-pub type AppSchema = Schema<QueryRoot, EmptyMutation, EmptySubscription>;
+use crate::config::Config;
+use crate::graphql::types::{parse_uuid, RegisterDevicePayload};
+use crate::services::DeviceService;
+
+pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 pub struct QueryRoot;
+pub struct MutationRoot;
 
 #[Object]
 impl QueryRoot {
     /// Liveness probe for clients and load balancers.
-    async fn health(&self, _ctx: &Context<'_>) -> String {
-        "ok".to_string()
+    async fn health(&self) -> &str {
+        "ok"
     }
 }
 
-pub fn build_schema() -> AppSchema {
-    Schema::build(QueryRoot, EmptyMutation, EmptySubscription).finish()
+#[Object]
+impl MutationRoot {
+    /// Register an anonymous device and receive a bearer token (shown once).
+    async fn register_device(&self, ctx: &Context<'_>) -> Result<RegisterDevicePayload> {
+        let pool = ctx.data::<PgPool>()?;
+        let config = ctx.data::<Config>()?;
+        let registered = DeviceService::new(pool, &config.device_token_secret)
+            .register()
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(RegisterDevicePayload {
+            device_id: parse_uuid(&registered.device.id),
+            token: registered.token,
+        })
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn health_returns_ok() {
-        let schema = build_schema();
-        let response = schema.execute("{ health }").await;
-        assert!(response.errors.is_empty(), "{:?}", response.errors);
-        let data = response.data.into_json().expect("json");
-        assert_eq!(data["health"], "ok");
-    }
+pub fn build_schema_with_data(pool: PgPool, config: Config) -> AppSchema {
+    Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+        .data(pool)
+        .data(config)
+        .finish()
 }

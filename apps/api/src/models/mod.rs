@@ -1,1 +1,5 @@
-//! Domain models (Phase 2+).
+//! Domain models.
+
+mod device;
+
+pub use device::Device;
