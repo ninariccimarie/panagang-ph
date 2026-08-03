@@ -2,7 +2,7 @@ use async_graphql::{InputObject, SimpleObject, ID};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::models::Report;
+use crate::report::Report;
 
 #[derive(SimpleObject)]
 pub struct RegisterDevicePayload {

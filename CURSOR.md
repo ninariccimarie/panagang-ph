@@ -86,24 +86,38 @@ panagang/
 
 Organize Flutter code by feature under `lib/features/`. Keep platform protection behind `lib/platform/scam_protection/`. Do not invent additional top-level apps without a clear need.
 
+Organize the Rust API by **feature module** (capability), not global `models/` / `services/` / `repositories/` folders:
+
+```text
+apps/api/src/
+  graphql/     # thin Axum + schema wiring
+  shared/      # cross-cutting helpers only
+  device/      # models.rs, repository.rs, service.rs
+  report/
+  ...
+```
+
+Inside each feature module, keep local layering (models → repository → service). Resolvers stay thin and call feature services.
+
 ---
 
 ## Backend architecture
 
 ```text
-GraphQL → Resolvers → Services → Repositories → SQLx → PostgreSQL
+GraphQL → Resolvers → Feature services → Feature repositories → SQLx → PostgreSQL
 ```
 
 | Layer | Responsibility |
 | --- | --- |
-| Resolvers | Thin GraphQL adapters; map inputs/outputs; call services |
-| Services | Business logic, validation orchestration, phone normalization (E.164), authorization checks |
-| Repositories | Database access only |
+| Resolvers | Thin GraphQL adapters; map inputs/outputs; call feature services |
+| Feature services | Business logic, validation orchestration, authorization checks |
+| Feature repositories | Database access only for that capability |
+| `shared/` | Cross-cutting helpers used by ≥2 features (e.g. E.164 phone normalize) |
 | SQLx | SQL / migrations / data mapping |
 
-Resolvers must remain thin. Business logic belongs in services. Repositories must not contain business rules.
+Resolvers must remain thin. Business logic belongs in feature services. Repositories must not contain business rules.
 
-Async AI jobs live under `jobs/` and call `llm/` through a provider trait. Reputation and blacklist updates happen after classification completes.
+Async AI jobs live under `jobs/` / `classification/` and call `llm/` through a provider trait. Reputation and blacklist updates happen after classification completes.
 
 ---
 

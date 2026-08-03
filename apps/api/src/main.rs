@@ -1,14 +1,14 @@
 //! Panagang PH API — device identity and scam report intake.
 
 mod config;
+mod device;
 mod graphql;
 #[allow(dead_code)]
 mod jobs;
 #[allow(dead_code)]
 mod llm;
-mod models;
-mod repositories;
-mod services;
+mod report;
+mod shared;
 
 use std::net::SocketAddr;
 

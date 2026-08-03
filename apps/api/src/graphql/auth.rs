@@ -1,8 +1,7 @@
 use axum::http::HeaderMap;
 use sqlx::PgPool;
 
-use crate::models::Device;
-use crate::services::DeviceService;
+use crate::device::{Device, DeviceService};
 
 #[derive(Debug, Clone)]
 pub struct AuthContext {

@@ -2,9 +2,9 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::models::Report;
-use crate::repositories::ReportRepository;
-use crate::services::phone::{normalize_phone, PhoneError};
+use crate::report::models::Report;
+use crate::report::repository::ReportRepository;
+use crate::shared::phone::{normalize_phone, PhoneError};
 
 #[derive(Debug, Clone)]
 pub struct SubmitReportInput {

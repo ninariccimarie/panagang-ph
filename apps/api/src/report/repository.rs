@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::Report;
+use crate::report::Report;
 
 pub struct ReportRepository<'a> {
     pool: &'a PgPool,

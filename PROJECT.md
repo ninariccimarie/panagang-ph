@@ -98,10 +98,13 @@ Flutter (feature modules)
 
 | Layer | Responsibility |
 | --- | --- |
-| Resolvers | Map GraphQL inputs/outputs; call services only |
-| Services | Business logic, validation orchestration, phone normalization, reputation rules |
-| Repositories | Database access only |
+| Resolvers | Map GraphQL inputs/outputs; call feature services only |
+| Feature services | Business logic, validation orchestration, authorization |
+| Feature repositories | Database access only for that capability |
+| `shared/` | Cross-cutting helpers (phone normalization, etc.) |
 | LLM module | Provider trait + Gemini / Groq / Ollama adapters |
+
+Organize the API by feature module (`device/`, `report/`, …). Layers exist inside each feature, not as global top-level folders.
 
 Phone numbers are normalized to **E.164** at the service boundary. All reputation, lookup, blacklist, and sync keys use normalized numbers.
 
@@ -217,14 +220,17 @@ panagang/
           scam_protection/
       android/
       ios/
-    api/                     # Rust Axum
+    api/                     # Rust Axum (feature modules)
       src/
         main.rs
         config/
-        graphql/
-        services/
-        repositories/
-        models/
+        graphql/             # thin HTTP + schema edge
+        shared/              # cross-cutting (e.g. phone normalize)
+        device/              # models + repository + service
+        report/
+        reputation/          # later
+        blacklist/           # later
+        classification/      # later
         jobs/
         llm/
       migrations/

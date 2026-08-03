@@ -4,9 +4,10 @@ use async_graphql::{Context, EmptySubscription, Object, Result, Schema};
 use sqlx::PgPool;
 
 use crate::config::Config;
+use crate::device::DeviceService;
 use crate::graphql::auth::AuthContext;
 use crate::graphql::types::{parse_uuid, RegisterDevicePayload, ScamReport, SubmitScamReportInput};
-use crate::services::{DeviceService, ReportService, SubmitReportInput};
+use crate::report::{ReportService, SubmitReportInput};
 
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
@@ -72,7 +73,7 @@ impl MutationRoot {
     }
 }
 
-fn require_device<'a>(ctx: &'a Context<'_>) -> Result<&'a crate::models::Device> {
+fn require_device<'a>(ctx: &'a Context<'_>) -> Result<&'a crate::device::Device> {
     let auth = ctx.data::<AuthContext>()?;
     auth.device
         .as_ref()
@@ -92,8 +93,8 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
+    use crate::device::DeviceService;
     use crate::graphql::auth::AuthContext;
-    use crate::services::DeviceService;
 
     fn test_config() -> Config {
         Config {

@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::Device;
+use crate::device::Device;
 
 pub struct DeviceRepository<'a> {
     pool: &'a PgPool,

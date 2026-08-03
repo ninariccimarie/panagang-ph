@@ -6,8 +6,8 @@ use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::models::Device;
-use crate::repositories::DeviceRepository;
+use crate::device::models::Device;
+use crate::device::repository::DeviceRepository;
 
 type HmacSha256 = Hmac<Sha256>;
 
