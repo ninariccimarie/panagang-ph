@@ -86,3 +86,165 @@ pub fn build_schema_with_data(pool: PgPool, config: Config) -> AppSchema {
         .finish()
 }
 
+#[cfg(test)]
+mod tests {
+    use async_graphql::Request;
+    use sqlx::PgPool;
+
+    use super::*;
+    use crate::graphql::auth::AuthContext;
+    use crate::services::DeviceService;
+
+    fn test_config() -> Config {
+        Config {
+            host: "127.0.0.1".parse().unwrap(),
+            port: 8080,
+            database_url: "postgres://unused".into(),
+            device_token_secret: "test-secret".into(),
+        }
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn health_returns_ok(pool: PgPool) {
+        let schema = build_schema_with_data(pool, test_config());
+        let response = schema
+            .execute(Request::new("{ health }").data(AuthContext { device: None }))
+            .await;
+        assert!(response.errors.is_empty(), "{:?}", response.errors);
+        let data = response.data.into_json().expect("json");
+        assert_eq!(data["health"], "ok");
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn register_submit_and_list_reports(pool: PgPool) {
+        let config = test_config();
+        let schema = build_schema_with_data(pool.clone(), config.clone());
+
+        let registered = schema
+            .execute(
+                Request::new(
+                    r#"
+                    mutation {
+                      registerDevice {
+                        deviceId
+                        token
+                      }
+                    }
+                    "#,
+                )
+                .data(AuthContext { device: None }),
+            )
+            .await;
+        assert!(registered.errors.is_empty(), "{:?}", registered.errors);
+        let reg = registered.data.into_json().unwrap();
+        let token = reg["registerDevice"]["token"].as_str().unwrap().to_string();
+
+        let device = DeviceService::new(&pool, &config.device_token_secret)
+            .authenticate(&token)
+            .await
+            .expect("auth");
+
+        let submitted = schema
+            .execute(
+                Request::new(
+                    r#"
+                    mutation {
+                      submitScamReport(input: {
+                        countryCode: "+63"
+                        phoneNumber: "9171234567"
+                        smsContent: "Congrats winner claim prize"
+                      }) {
+                        phoneE164
+                        countryCode
+                        nationalNumber
+                        smsContent
+                      }
+                    }
+                    "#,
+                )
+                .data(AuthContext {
+                    device: Some(device.clone()),
+                }),
+            )
+            .await;
+        assert!(submitted.errors.is_empty(), "{:?}", submitted.errors);
+        let report = submitted.data.into_json().unwrap();
+        assert_eq!(report["submitScamReport"]["phoneE164"], "+639171234567");
+        assert_eq!(report["submitScamReport"]["nationalNumber"], "9171234567");
+
+        let listed = schema
+            .execute(
+                Request::new("{ myReports { phoneE164 smsContent } }").data(AuthContext {
+                    device: Some(device),
+                }),
+            )
+            .await;
+        assert!(listed.errors.is_empty(), "{:?}", listed.errors);
+        let rows = listed.data.into_json().unwrap();
+        assert_eq!(rows["myReports"].as_array().unwrap().len(), 1);
+        assert_eq!(rows["myReports"][0]["phoneE164"], "+639171234567");
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn my_reports_requires_auth(pool: PgPool) {
+        let schema = build_schema_with_data(pool, test_config());
+        let response = schema
+            .execute(Request::new("{ myReports { id } }").data(AuthContext { device: None }))
+            .await;
+        assert!(!response.errors.is_empty());
+        assert!(response.errors[0].message.contains("unauthorized"));
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn submit_requires_auth(pool: PgPool) {
+        let schema = build_schema_with_data(pool, test_config());
+        let response = schema
+            .execute(
+                Request::new(
+                    r#"
+                    mutation {
+                      submitScamReport(input: {
+                        countryCode: "+63"
+                        phoneNumber: "9171234567"
+                      }) { id }
+                    }
+                    "#,
+                )
+                .data(AuthContext { device: None }),
+            )
+            .await;
+        assert!(!response.errors.is_empty());
+        assert!(response.errors[0].message.contains("unauthorized"));
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn submit_rejects_invalid_phone(pool: PgPool) {
+        let config = test_config();
+        let schema = build_schema_with_data(pool.clone(), config.clone());
+        let device = DeviceService::new(&pool, &config.device_token_secret)
+            .register()
+            .await
+            .expect("register")
+            .device;
+
+        let response = schema
+            .execute(
+                Request::new(
+                    r#"
+                    mutation {
+                      submitScamReport(input: {
+                        countryCode: "+63"
+                        phoneNumber: "123"
+                      }) { id }
+                    }
+                    "#,
+                )
+                .data(AuthContext {
+                    device: Some(device),
+                }),
+            )
+            .await;
+        assert!(!response.errors.is_empty());
+        assert!(response.errors[0].message.contains("invalid phone"));
+    }
+}
