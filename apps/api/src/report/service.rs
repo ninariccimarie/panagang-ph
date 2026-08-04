@@ -1,7 +1,7 @@
-use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::db::DbPool;
 use crate::report::models::Report;
 use crate::report::repository::ReportRepository;
 use crate::shared::phone::{normalize_phone, PhoneError};
@@ -17,16 +17,22 @@ pub struct SubmitReportInput {
 pub enum ReportError {
     #[error(transparent)]
     Phone(#[from] PhoneError),
-    #[error("database error")]
-    Database(#[from] sqlx::Error),
+    #[error("database error: {0}")]
+    Database(String),
+}
+
+impl From<String> for ReportError {
+    fn from(value: String) -> Self {
+        Self::Database(value)
+    }
 }
 
 pub struct ReportService<'a> {
-    pool: &'a PgPool,
+    pool: &'a DbPool,
 }
 
 impl<'a> ReportService<'a> {
-    pub fn new(pool: &'a PgPool) -> Self {
+    pub fn new(pool: &'a DbPool) -> Self {
         Self { pool }
     }
 

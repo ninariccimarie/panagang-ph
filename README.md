@@ -17,7 +17,7 @@ MVP focus: **protect users from known scam phone numbers**.
 | Layer | Technology |
 | --- | --- |
 | Mobile | Flutter, Dart, Riverpod, GoRouter, graphql_flutter, Freezed |
-| API | Rust, Axum, async-graphql, SQLx, PostgreSQL, Redis |
+| API | Rust, Axum, async-graphql, Diesel, PostgreSQL, Redis |
 | AI | Gemini Flash free tier (default), Groq backup, Ollama local |
 | Identity | Anonymous device tokens |
 | Ops | Docker Compose, GitHub Actions, Fly.io |

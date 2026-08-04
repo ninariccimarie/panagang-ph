@@ -69,7 +69,7 @@ Maximum feasible on **both** platforms:
 - Rust
 - Axum
 - async-graphql
-- SQLx
+- Diesel (diesel-async)
 - PostgreSQL
 - Redis
 
@@ -89,7 +89,7 @@ Flutter (feature modules)
     → Axum + async-graphql
       → Resolvers (thin)
         → Services (business logic)
-          → Repositories (SQLx) → PostgreSQL
+          → Repositories (Diesel) → PostgreSQL
           → Redis (blacklist version / cache / job hints)
           → LLM client (scam classification)
 ```
@@ -231,10 +231,12 @@ panagang/
         reputation/          # later
         blacklist/           # later
         classification/      # later
+        db/                  # Diesel pool + embedded migrations
         jobs/
         llm/
-        migrate.rs           # folder-based up/down runner
-      migrations/            # yyyy-mm-dd-hhmmss-description/{up,down}.sql
+        schema.rs            # Diesel table definitions
+      migrations/            # Diesel: yyyy-mm-dd-HHMMSS_description/{up,down}.sql
+      diesel.toml
       tests/
   docs/
   scripts/
@@ -245,13 +247,13 @@ panagang/
 
 ## SQL migrations
 
-Migrations live under [`apps/api/migrations/`](apps/api/migrations/) and **must** be reversible.
+Migrations use **Diesel** under [`apps/api/migrations/`](apps/api/migrations/) and **must** be reversible.
 
 ### Layout
 
 ```text
 apps/api/migrations/
-  yyyy-mm-dd-hhmmss-short-description/
+  yyyy-mm-dd-HHMMSS_short_description/
     up.sql
     down.sql
 ```
@@ -259,22 +261,22 @@ apps/api/migrations/
 Examples:
 
 ```text
-2026-08-03-100000-create-devices/up.sql
-2026-08-03-100000-create-devices/down.sql
-2026-08-03-100001-create-reports/up.sql
-2026-08-03-100001-create-reports/down.sql
+2026-08-03-100000_create_devices/up.sql
+2026-08-03-100000_create_devices/down.sql
+2026-08-03-100001_create_reports/up.sql
+2026-08-03-100001_create_reports/down.sql
 ```
+
+Create new migrations with the Diesel CLI (`diesel migration generate <name>` from `apps/api`, with `diesel.toml`).
 
 ### Rules
 
 - Always add both `up.sql` and `down.sql` for every migration.
-- Folder names sort lexicographically; use UTC timestamps so order is obvious.
-- Use a short kebab-case description after the timestamp.
-- Applied versions are recorded in Postgres table `schema_migrations`.
-- The API runs pending `up.sql` files on startup (`migrate::run`).
-- Roll back the latest migration with `migrate::revert_last` (CLI/helper can wrap this later).
-
-Do **not** use flat single-file SQLx migrations (`20260803100000_name.sql`) in this repo.
+- Folder names follow Diesel’s timestamp + underscore + snake_case description.
+- Applied versions are recorded in Postgres table `__diesel_schema_migrations`.
+- The API runs pending migrations on startup via `diesel_migrations` (`db::run_migrations`).
+- Prefer `diesel migration redo` / `revert` locally for rollbacks.
+- Keep [`apps/api/src/schema.rs`](apps/api/src/schema.rs) in sync (`diesel print-schema` or manual update).
 
 ### `updated_at` timestamps
 
@@ -286,7 +288,7 @@ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
 A shared Postgres function `set_updated_at()` runs as a `BEFORE UPDATE` trigger and sets `NEW.updated_at = NOW()`.
 
-Migration `2026-08-04-171700-add-updated-at-triggers` creates that function and attaches `<table>_set_updated_at` to every **public** table that already has an `updated_at` column.
+Migration `2026-08-04-171700_add_updated_at_triggers` creates that function and attaches `<table>_set_updated_at` to every **public** table that already has an `updated_at` column.
 
 When you add a new table with `updated_at`, include a follow-up migration that re-runs the same “attach triggers to tables with `updated_at`” `DO $$ ... $$` block (or drops/recreates the specific table trigger) so the new table is wired automatically.
 

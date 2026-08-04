@@ -55,7 +55,7 @@ Always use the **latest stable** versions of frameworks, libraries, runtimes, an
 - Rust
 - Axum
 - async-graphql
-- SQLx
+- Diesel (diesel-async)
 - PostgreSQL
 - Redis
 
@@ -104,7 +104,7 @@ Inside each feature module, keep local layering (models → repository → servi
 ## Backend architecture
 
 ```text
-GraphQL → Resolvers → Feature services → Feature repositories → SQLx → PostgreSQL
+GraphQL → Resolvers → Feature services → Feature repositories → Diesel → PostgreSQL
 ```
 
 | Layer | Responsibility |
@@ -113,7 +113,7 @@ GraphQL → Resolvers → Feature services → Feature repositories → SQLx →
 | Feature services | Business logic, validation orchestration, authorization checks |
 | Feature repositories | Database access only for that capability |
 | `shared/` | Cross-cutting helpers used by ≥2 features (e.g. E.164 phone normalize) |
-| SQLx | SQL / migrations / data mapping |
+| Diesel | SQL / migrations / data mapping |
 
 Resolvers must remain thin. Business logic belongs in feature services. Repositories must not contain business rules.
 

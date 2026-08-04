@@ -1,47 +1,45 @@
 //! Panagang PH API — device identity and scam report intake.
 
 mod config;
+mod db;
 mod device;
 mod graphql;
 #[allow(dead_code)]
 mod jobs;
 #[allow(dead_code)]
 mod llm;
-mod migrate;
 mod report;
+mod schema;
 mod shared;
 
 use std::net::SocketAddr;
 
 use axum::Router;
-use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
 use crate::config::Config;
+use crate::db::{create_pool, run_migrations};
 use crate::graphql::graphql_router;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("panagang_api=info,tower_http=info,sqlx=warn")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                EnvFilter::new("panagang_api=info,tower_http=info,diesel=warn")
+            }),
         )
         .init();
 
     let config = Config::from_env();
 
-    let pool = PgPoolOptions::new()
-        .max_connections(10)
-        .connect(&config.database_url)
-        .await
-        .expect("failed to connect to Postgres");
+    run_migrations(&config.database_url).expect("failed to run database migrations");
 
-    migrate::run(&pool)
+    let pool = create_pool(&config.database_url)
         .await
-        .expect("failed to run database migrations");
+        .expect("failed to create Postgres connection pool");
 
     let addr = SocketAddr::from((config.host, config.port));
     let app = Router::new()

@@ -2,10 +2,10 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use hmac::{Hmac, Mac};
 use rand::RngCore;
 use sha2::Sha256;
-use sqlx::PgPool;
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::db::DbPool;
 use crate::device::models::Device;
 use crate::device::repository::DeviceRepository;
 
@@ -20,19 +20,25 @@ pub struct RegisteredDevice {
 
 #[derive(Debug, Error)]
 pub enum DeviceError {
-    #[error("database error")]
-    Database(#[from] sqlx::Error),
+    #[error("database error: {0}")]
+    Database(String),
     #[error("invalid device token")]
     InvalidToken,
 }
 
+impl From<String> for DeviceError {
+    fn from(value: String) -> Self {
+        Self::Database(value)
+    }
+}
+
 pub struct DeviceService<'a> {
-    pool: &'a PgPool,
+    pool: &'a DbPool,
     token_secret: &'a str,
 }
 
 impl<'a> DeviceService<'a> {
-    pub fn new(pool: &'a PgPool, token_secret: &'a str) -> Self {
+    pub fn new(pool: &'a DbPool, token_secret: &'a str) -> Self {
         Self { pool, token_secret }
     }
 

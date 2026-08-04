@@ -1,6 +1,6 @@
 use axum::http::HeaderMap;
-use sqlx::PgPool;
 
+use crate::db::DbPool;
 use crate::device::{Device, DeviceService};
 
 #[derive(Debug, Clone)]
@@ -10,7 +10,7 @@ pub struct AuthContext {
 
 pub async fn authenticate_from_headers(
     headers: &HeaderMap,
-    pool: &PgPool,
+    pool: &DbPool,
     token_secret: &str,
 ) -> Option<Device> {
     let value = headers

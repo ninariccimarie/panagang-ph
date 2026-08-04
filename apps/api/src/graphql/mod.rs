@@ -10,9 +10,9 @@ use axum::http::HeaderMap;
 use axum::response::{Html, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Extension, Router};
-use sqlx::PgPool;
 
 use crate::config::Config;
+use crate::db::DbPool;
 use crate::graphql::auth::{authenticate_from_headers, AuthContext};
 use crate::graphql::schema::{build_schema_with_data, AppSchema};
 
@@ -22,7 +22,7 @@ async fn graphiql() -> impl IntoResponse {
 
 async fn graphql_handler(
     schema: Extension<AppSchema>,
-    pool: Extension<PgPool>,
+    pool: Extension<DbPool>,
     config: Extension<Config>,
     headers: HeaderMap,
     req: GraphQLRequest,
@@ -33,7 +33,7 @@ async fn graphql_handler(
     schema.execute(request).await.into()
 }
 
-pub fn graphql_router(pool: PgPool, config: Config) -> Router {
+pub fn graphql_router(pool: DbPool, config: Config) -> Router {
     let schema = build_schema_with_data(pool.clone(), config.clone());
     Router::new()
         .route("/graphql", post(graphql_handler))
