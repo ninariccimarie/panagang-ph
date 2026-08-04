@@ -17,7 +17,7 @@ MVP focus: **protect users from known scam phone numbers**.
 | Layer | Technology |
 | --- | --- |
 | Mobile | Flutter, Dart, Riverpod, GoRouter, graphql_flutter, Freezed |
-| API | Rust, Axum, async-graphql, SQLx, PostgreSQL, Redis |
+| API | Rust, Axum, async-graphql, Diesel, PostgreSQL, Redis |
 | AI | Gemini Flash free tier (default), Groq backup, Ollama local |
 | Identity | Anonymous device tokens |
 | Ops | Docker Compose, GitHub Actions, Fly.io |
@@ -70,7 +70,7 @@ docker compose up -d postgres redis
 
 | Service | URL / port |
 | --- | --- |
-| PostgreSQL | `localhost:5432` (`panagang` / `panagang` / db `panagang`) |
+| PostgreSQL | `localhost:5433` (`panagang` / `panagang` / db `panagang`) |
 | Redis | `localhost:6379` |
 
 Stop with `docker compose down`. Data persists in named volumes.
@@ -82,6 +82,8 @@ cd apps/api
 cargo run
 ```
 
+Requires Postgres (`docker compose up -d postgres`) and `DATABASE_URL` / `DEVICE_TOKEN_SECRET` (see `.env.example`). Migrations run on startup.
+
 GraphQL endpoint (default): `http://127.0.0.1:8080/graphql`
 
 Example health check:
@@ -91,6 +93,8 @@ curl -s -X POST http://127.0.0.1:8080/graphql \
   -H 'content-type: application/json' \
   -d '{"query":"{ health }"}'
 ```
+
+Device registration and report intake: see [`docs/development.md`](./docs/development.md).
 
 ### Mobile
 

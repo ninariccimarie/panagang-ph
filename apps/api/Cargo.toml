@@ -6,12 +6,29 @@ description = "Panagang PH GraphQL API"
 license = "MIT"
 
 [dependencies]
-async-graphql = "7"
+async-graphql = { version = "7", features = ["chrono", "uuid"] }
 async-graphql-axum = "7"
 axum = "0.8"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+diesel = { version = "2.2", features = ["postgres", "chrono", "uuid"] }
+diesel-async = { version = "0.5", features = ["postgres", "bb8"] }
+diesel_migrations = { version = "2.2", features = ["postgres"] }
+hex = "0.4"
+hmac = "0.12"
+phonenumber = "0.3"
+rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
 tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["serde", "v4"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+url = "2"
