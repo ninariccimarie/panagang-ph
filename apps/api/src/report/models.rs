@@ -11,4 +11,5 @@ pub struct Report {
     pub national_number: String,
     pub sms_content: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }

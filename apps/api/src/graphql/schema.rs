@@ -105,8 +105,9 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrations = "./migrations")]
+    #[sqlx::test]
     async fn health_returns_ok(pool: PgPool) {
+        crate::migrate::run(&pool).await.expect("migrate");
         let schema = build_schema_with_data(pool, test_config());
         let response = schema
             .execute(Request::new("{ health }").data(AuthContext { device: None }))
@@ -116,8 +117,9 @@ mod tests {
         assert_eq!(data["health"], "ok");
     }
 
-    #[sqlx::test(migrations = "./migrations")]
+    #[sqlx::test]
     async fn register_submit_and_list_reports(pool: PgPool) {
+        crate::migrate::run(&pool).await.expect("migrate");
         let config = test_config();
         let schema = build_schema_with_data(pool.clone(), config.clone());
 
@@ -186,8 +188,9 @@ mod tests {
         assert_eq!(rows["myReports"][0]["phoneE164"], "+639171234567");
     }
 
-    #[sqlx::test(migrations = "./migrations")]
+    #[sqlx::test]
     async fn my_reports_requires_auth(pool: PgPool) {
+        crate::migrate::run(&pool).await.expect("migrate");
         let schema = build_schema_with_data(pool, test_config());
         let response = schema
             .execute(Request::new("{ myReports { id } }").data(AuthContext { device: None }))
@@ -196,8 +199,9 @@ mod tests {
         assert!(response.errors[0].message.contains("unauthorized"));
     }
 
-    #[sqlx::test(migrations = "./migrations")]
+    #[sqlx::test]
     async fn submit_requires_auth(pool: PgPool) {
+        crate::migrate::run(&pool).await.expect("migrate");
         let schema = build_schema_with_data(pool, test_config());
         let response = schema
             .execute(
@@ -218,8 +222,9 @@ mod tests {
         assert!(response.errors[0].message.contains("unauthorized"));
     }
 
-    #[sqlx::test(migrations = "./migrations")]
+    #[sqlx::test]
     async fn submit_rejects_invalid_phone(pool: PgPool) {
+        crate::migrate::run(&pool).await.expect("migrate");
         let config = test_config();
         let schema = build_schema_with_data(pool.clone(), config.clone());
         let device = DeviceService::new(&pool, &config.device_token_secret)

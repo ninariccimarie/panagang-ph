@@ -4,7 +4,7 @@ See the root [`README.md`](../README.md) for Docker Compose and API basics.
 
 ## API database
 
-The API reads `DATABASE_URL` and runs SQLx migrations on startup.
+The API reads `DATABASE_URL` and runs folder-based SQL migrations on startup (`up.sql` / `down.sql`). See [`PROJECT.md`](../PROJECT.md) for the migration layout convention.
 
 ```bash
 cp .env.example .env
@@ -12,6 +12,8 @@ docker compose up -d postgres redis
 cd apps/api
 cargo run
 ```
+
+Local Compose Postgres is on host port **5433** (see `.env.example`).
 
 ## Anonymous device auth
 
@@ -58,4 +60,4 @@ export DATABASE_URL=postgres://panagang:panagang@localhost:5433/panagang
 cd apps/api && cargo test
 ```
 
-`#[sqlx::test]` creates isolated databases against `DATABASE_URL` and applies migrations automatically.
+`#[sqlx::test]` creates an isolated database; each test calls `migrate::run` to apply `up.sql` files.

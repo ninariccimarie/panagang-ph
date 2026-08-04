@@ -7,6 +7,7 @@ mod graphql;
 mod jobs;
 #[allow(dead_code)]
 mod llm;
+mod migrate;
 mod report;
 mod shared;
 
@@ -38,8 +39,7 @@ async fn main() {
         .await
         .expect("failed to connect to Postgres");
 
-    sqlx::migrate!("./migrations")
-        .run(&pool)
+    migrate::run(&pool)
         .await
         .expect("failed to run database migrations");
 

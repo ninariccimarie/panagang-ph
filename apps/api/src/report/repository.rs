@@ -28,7 +28,8 @@ impl<'a> ReportRepository<'a> {
             )
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING
-                id, device_id, phone_e164, country_code, national_number, sms_content, created_at
+                id, device_id, phone_e164, country_code, national_number, sms_content,
+                created_at, updated_at
             "#,
         )
         .bind(id)
@@ -45,7 +46,8 @@ impl<'a> ReportRepository<'a> {
         sqlx::query_as::<_, Report>(
             r#"
             SELECT
-                id, device_id, phone_e164, country_code, national_number, sms_content, created_at
+                id, device_id, phone_e164, country_code, national_number, sms_content,
+                created_at, updated_at
             FROM reports
             WHERE device_id = $1
             ORDER BY created_at DESC

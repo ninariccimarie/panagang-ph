@@ -17,7 +17,7 @@ impl<'a> DeviceRepository<'a> {
             r#"
             INSERT INTO devices (id, token_hash)
             VALUES ($1, $2)
-            RETURNING id, token_hash, created_at, last_seen_at
+            RETURNING id, token_hash, created_at, updated_at, last_seen_at
             "#,
         )
         .bind(id)
@@ -32,7 +32,7 @@ impl<'a> DeviceRepository<'a> {
     ) -> Result<Option<Device>, sqlx::Error> {
         sqlx::query_as::<_, Device>(
             r#"
-            SELECT id, token_hash, created_at, last_seen_at
+            SELECT id, token_hash, created_at, updated_at, last_seen_at
             FROM devices
             WHERE token_hash = $1
             "#,

@@ -233,12 +233,64 @@ panagang/
         classification/      # later
         jobs/
         llm/
-      migrations/
+        migrate.rs           # folder-based up/down runner
+      migrations/            # yyyy-mm-dd-hhmmss-description/{up,down}.sql
       tests/
   docs/
   scripts/
   docker/
 ```
+
+---
+
+## SQL migrations
+
+Migrations live under [`apps/api/migrations/`](apps/api/migrations/) and **must** be reversible.
+
+### Layout
+
+```text
+apps/api/migrations/
+  yyyy-mm-dd-hhmmss-short-description/
+    up.sql
+    down.sql
+```
+
+Examples:
+
+```text
+2026-08-03-100000-create-devices/up.sql
+2026-08-03-100000-create-devices/down.sql
+2026-08-03-100001-create-reports/up.sql
+2026-08-03-100001-create-reports/down.sql
+```
+
+### Rules
+
+- Always add both `up.sql` and `down.sql` for every migration.
+- Folder names sort lexicographically; use UTC timestamps so order is obvious.
+- Use a short kebab-case description after the timestamp.
+- Applied versions are recorded in Postgres table `schema_migrations`.
+- The API runs pending `up.sql` files on startup (`migrate::run`).
+- Roll back the latest migration with `migrate::revert_last` (CLI/helper can wrap this later).
+
+Do **not** use flat single-file SQLx migrations (`20260803100000_name.sql`) in this repo.
+
+### `updated_at` timestamps
+
+Mutable tables should include:
+
+```sql
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+```
+
+A shared Postgres function `set_updated_at()` runs as a `BEFORE UPDATE` trigger and sets `NEW.updated_at = NOW()`.
+
+Migration `2026-08-04-171700-add-updated-at-triggers` creates that function and attaches `<table>_set_updated_at` to every **public** table that already has an `updated_at` column.
+
+When you add a new table with `updated_at`, include a follow-up migration that re-runs the same “attach triggers to tables with `updated_at`” `DO $$ ... $$` block (or drops/recreates the specific table trigger) so the new table is wired automatically.
+
+`created_at` is set once on insert. Domain-specific timestamps like `last_seen_at` remain separate and are updated in application code when that meaning applies.
 
 ---
 
